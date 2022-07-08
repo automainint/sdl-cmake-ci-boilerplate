@@ -13,25 +13,6 @@ namespace cute::example {
   static constexpr int default_window_width  = 1024;
   static constexpr int default_window_height = 768;
 
-  [[nodiscard]] auto default_window_rect() noexcept
-      -> tuple<int, int, int, int> {
-    int x      = SDL_WINDOWPOS_UNDEFINED;
-    int y      = SDL_WINDOWPOS_UNDEFINED;
-    int width  = default_window_width;
-    int height = default_window_height;
-
-    auto display_mode = SDL_DisplayMode {};
-    if (SDL_GetCurrentDisplayMode(0, &display_mode) < 0) {
-      cout << "SDL_GetCurrentDisplayMode failed: " << SDL_GetError()
-           << '\n';
-    } else {
-      x = display_mode.w / 2 - width / 2;
-      y = display_mode.h / 2 - height / 2;
-    }
-
-    return { x, y, width, height };
-  }
-
   [[nodiscard]] auto init() noexcept -> bool {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
       cout << "SDL_Init failed: " << SDL_GetError() << '\n';
@@ -42,11 +23,10 @@ namespace cute::example {
   }
 
   [[nodiscard]] auto create_window() noexcept -> SDL_Window * {
-    auto [x, y, width, height] = default_window_rect();
-
     auto window = SDL_CreateWindow(
-        "Cute Example", x, y, width, height,
-        SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
+        "Cute Example", SDL_WINDOWPOS_CENTERED,
+        SDL_WINDOWPOS_CENTERED, default_window_width,
+        default_window_height, SDL_WINDOW_RESIZABLE);
 
     if (window == nullptr) {
       cout << "SDL_CreateWindow failed: " << SDL_GetError() << '\n';
@@ -56,19 +36,47 @@ namespace cute::example {
     return window;
   }
 
-  void event_loop() noexcept {
+  void render(SDL_Renderer *renderer) noexcept {
+    SDL_SetRenderDrawColor(renderer, 0x70, 0x78, 0x90, 0xff);
+    SDL_RenderClear(renderer);
+
+    auto rect = SDL_Rect {};
+    SDL_RenderGetViewport(renderer, &rect);
+    SDL_SetRenderDrawColor(renderer, 0x90, 0x70, 0x78, 0xff);
+    rect.x += 40;
+    rect.y += 40;
+    rect.w -= 80;
+    rect.h -= 80;
+    SDL_RenderFillRect(renderer, &rect);
+  }
+
+  void event_loop(SDL_Renderer *renderer) noexcept {
     for (bool done = false; !done;) {
       auto event = SDL_Event {};
       while (SDL_PollEvent(&event) == 1)
         if (event.type == SDL_QUIT)
           done = true;
+
+      render(renderer);
+
+      SDL_RenderPresent(renderer);
     }
   }
 
   void run() {
     if (init()) {
       if (auto window = create_window(); window != nullptr) {
-        event_loop();
+        auto renderer = SDL_CreateRenderer(window, -1, 0);
+
+        if (renderer == nullptr)
+          cout << "SDL_CreateSoftwareRenderer failed: "
+               << SDL_GetError() << '\n';
+        else {
+          event_loop(renderer);
+
+          SDL_DestroyRenderer(renderer);
+        }
+
         SDL_DestroyWindow(window);
       }
 
