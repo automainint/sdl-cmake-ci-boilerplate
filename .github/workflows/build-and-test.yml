@@ -26,7 +26,7 @@ jobs:
       - name: Set up CMake 3.20
         uses: jwlawson/actions-setup-cmake@v1.8
         with:
-          cmake-version: 3.20
+          cmake-version: "3.20"
 
       - name: Install GCC 11
         if: runner.os == 'Linux'
@@ -104,7 +104,7 @@ jobs:
       - name: Set up CMake 3.20
         uses: jwlawson/actions-setup-cmake@v1.8
         with:
-          cmake-version: 3.20
+          cmake-version: "3.20"
 
       - name: Install GCC 11
         if: runner.os == 'Linux'
