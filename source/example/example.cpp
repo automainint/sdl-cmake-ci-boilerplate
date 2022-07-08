@@ -32,12 +32,7 @@ namespace cute::example {
     return { x, y, width, height };
   }
 
-  [[nodiscard]] auto run() -> int {
-    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-      cout << "SDL_Init failed: " << SDL_GetError() << '\n';
-      return 1;
-    }
-
+  [[nodiscard]] auto create_window() noexcept -> SDL_Window * {
     auto [x, y, width, height] = default_window_rect();
 
     auto window = SDL_CreateWindow(
@@ -46,15 +41,33 @@ namespace cute::example {
 
     if (window == nullptr) {
       cout << "SDL_CreateWindow failed: " << SDL_GetError() << '\n';
-      return 1;
+      return nullptr;
     }
 
+    return window;
+  }
+
+  void event_loop() noexcept {
     for (bool done = false; !done;) {
       auto event = SDL_Event {};
       while (SDL_PollEvent(&event) == 1)
         if (event.type == SDL_QUIT)
           done = true;
     }
+  }
+
+  [[nodiscard]] auto run() -> int {
+    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+      cout << "SDL_Init failed: " << SDL_GetError() << '\n';
+      return 1;
+    }
+
+    auto window = create_window();
+
+    if (window == nullptr)
+      return 1;
+
+    event_loop();
 
     SDL_DestroyWindow(window);
     SDL_Quit();

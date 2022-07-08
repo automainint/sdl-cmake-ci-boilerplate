@@ -82,6 +82,7 @@ if(CUTE_ENABLE_EXAMPLE)
     FetchContent_MakeAvailable(SDL2)
 
     add_library(SDL2::SDL2 ALIAS SDL2)
+    add_library(SDL2::SDL2main ALIAS SDL2main)
   endif()
 
   add_executable(${CUTE_EXAMPLE})
@@ -89,7 +90,7 @@ if(CUTE_ENABLE_EXAMPLE)
   target_link_libraries(
     ${CUTE_EXAMPLE}
     PRIVATE
-    ${CUTE_LIBRARY} SDL2::SDL2)
+    ${CUTE_LIBRARY} SDL2::SDL2 SDL2::SDL2main)
 
   target_compile_features(${CUTE_EXAMPLE} PUBLIC cxx_std_20)
 endif()
