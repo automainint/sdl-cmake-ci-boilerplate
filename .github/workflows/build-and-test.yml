@@ -46,13 +46,19 @@ jobs:
           echo "C:/Program Files/OpenCppCoverage" >> $GITHUB_PATH
 
       - name: Build with GCC 11
-        if: runner.os != 'Windows'
+        if: runner.os == 'Linux'
         run: |
           cmake -D CMAKE_BUILD_TYPE=$BUILD_TYPE -B build -S .
           cmake --build build --config $BUILD_TYPE
         env:
           CC: gcc-11
           CXX: g++-11
+
+      - name: Build on macOS
+        if: runner.os == 'macOS'
+        run: |
+          cmake -D CMAKE_BUILD_TYPE=$BUILD_TYPE -B build -S .
+          cmake --build build --config $BUILD_TYPE
 
       - name: Build with Visual Studio
         if: runner.os == 'Windows'

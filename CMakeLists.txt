@@ -71,10 +71,6 @@ if(CUTE_ENABLE_TESTING)
 endif()
 
 if(CUTE_ENABLE_EXAMPLE)
-  if(APPLE)
-    enable_language(OBJC OBJCXX)
-  endif()
-  
   find_package(SDL2 QUIET)
 
   if(NOT SDL2_FOUND)
