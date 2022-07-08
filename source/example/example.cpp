@@ -28,12 +28,26 @@ namespace cute::example {
         SDL_WINDOWPOS_CENTERED, default_window_width,
         default_window_height, SDL_WINDOW_RESIZABLE);
 
-    if (window == nullptr) {
+    if (window == nullptr)
       cout << "SDL_CreateWindow failed: " << SDL_GetError() << '\n';
-      return nullptr;
-    }
 
     return window;
+  }
+
+  [[nodiscard]] auto create_renderer(SDL_Window *window) noexcept
+      -> SDL_Renderer * {
+    if (window == nullptr)
+      return nullptr;
+
+    auto renderer = SDL_CreateRenderer(window, -1,
+                                       SDL_RENDERER_ACCELERATED |
+                                           SDL_RENDERER_PRESENTVSYNC);
+
+    if (renderer == nullptr)
+      cout << "SDL_CreateSoftwareRenderer failed: " << SDL_GetError()
+           << '\n';
+
+    return renderer;
   }
 
   void render(SDL_Renderer *renderer) noexcept {
@@ -43,14 +57,17 @@ namespace cute::example {
     auto rect = SDL_Rect {};
     SDL_RenderGetViewport(renderer, &rect);
     SDL_SetRenderDrawColor(renderer, 0x90, 0x70, 0x78, 0xff);
-    rect.x += 40;
-    rect.y += 40;
-    rect.w -= 80;
-    rect.h -= 80;
+    rect.x += 80;
+    rect.y += 80;
+    rect.w -= 160;
+    rect.h -= 160;
     SDL_RenderFillRect(renderer, &rect);
   }
 
   void event_loop(SDL_Renderer *renderer) noexcept {
+    if (renderer == nullptr)
+      return;
+
     for (bool done = false; !done;) {
       auto event = SDL_Event {};
       while (SDL_PollEvent(&event) == 1)
@@ -64,24 +81,20 @@ namespace cute::example {
   }
 
   void run() {
-    if (init()) {
-      if (auto window = create_window(); window != nullptr) {
-        auto renderer = SDL_CreateRenderer(window, -1, 0);
+    if (!init())
+      return;
 
-        if (renderer == nullptr)
-          cout << "SDL_CreateSoftwareRenderer failed: "
-               << SDL_GetError() << '\n';
-        else {
-          event_loop(renderer);
+    auto window   = create_window();
+    auto renderer = create_renderer(window);
 
-          SDL_DestroyRenderer(renderer);
-        }
+    event_loop(renderer);
 
-        SDL_DestroyWindow(window);
-      }
+    if (renderer != nullptr)
+      SDL_DestroyRenderer(renderer);
+    if (window != nullptr)
+      SDL_DestroyWindow(window);
 
-      SDL_Quit();
-    }
+    SDL_Quit();
   }
 }
 
