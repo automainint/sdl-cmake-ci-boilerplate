@@ -4,6 +4,7 @@
 #include "cute.h"
 
 #include <algorithm>
+#include <iterator>
 
 namespace cute {
   using std::visit, std::decay_t, std::is_same_v, std::optional,
