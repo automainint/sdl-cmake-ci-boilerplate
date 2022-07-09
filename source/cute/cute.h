@@ -15,9 +15,7 @@ namespace cute {
   using time_type  = int64_t;
   using value_type = float;
 
-  extern std::pmr::unsynchronized_pool_resource memory_resource;
-
-  struct noop { };
+  extern std::pmr::synchronized_pool_resource memory_resource;
 
   struct color4 {
     value_type red   = 0;
@@ -29,48 +27,66 @@ namespace cute {
         default;
   };
 
-  struct coord2 {
-    value_type x = 0;
-    value_type y = 0;
+  struct coord2i {
+    ptrdiff_t x = 0;
+    ptrdiff_t y = 0;
 
-    [[nodiscard]] auto operator<=>(coord2 const &) const noexcept =
+    [[nodiscard]] constexpr auto operator<=>(
+        coord2i const &) const noexcept;
+  };
+
+  struct recti {
+    ptrdiff_t x      = 0;
+    ptrdiff_t y      = 0;
+    ptrdiff_t width  = 0;
+    ptrdiff_t height = 0;
+
+    [[nodiscard]] auto operator<=>(recti const &) const noexcept =
         default;
   };
 
-  struct fragment_position : coord2 { };
+  struct fragment_in {
+    recti area;
 
-  struct render_fragment {
-    coord2 position;
-    color4 color;
+    [[nodiscard]] auto operator<=>(
+        fragment_in const &) const noexcept = default;
   };
 
-  using entity_type =
-      std::variant<noop, fragment_position, render_fragment>;
+  struct fragment_out {
+    coord2i position;
+    color4  color;
+
+    [[nodiscard]] auto operator<=>(
+        fragment_out const &) const noexcept = default;
+  };
+
+  using primitive_type = std::variant<fragment_in, fragment_out>;
 
   struct state {
-    using fn_form = std::function<entity_type(state const &,
-                                              entity_type const &)>;
+    using fn_form = std::function<std::pmr::vector<primitive_type>(
+        state const &, primitive_type const &)>;
 
-    std::pmr::vector<entity_type> entities =
-        std::pmr::vector<entity_type> { &memory_resource };
+    std::pmr::vector<primitive_type> primitives =
+        std::pmr::vector<primitive_type> { &memory_resource };
+
     std::pmr::vector<fn_form> forms = std::pmr::vector<fn_form> {
       &memory_resource
     };
 
-    [[nodiscard]] auto put(entity_type entity) const noexcept
+    [[nodiscard]] auto put(primitive_type entity) const noexcept
         -> state;
 
     [[nodiscard]] auto form_any(fn_form fn) const noexcept -> state;
 
     [[nodiscard]] auto form(auto fn) const noexcept -> state;
 
-    [[nodiscard]] auto fragment(coord2 position) const noexcept
-        -> color4;
-
     [[nodiscard]] auto cycle() const noexcept -> state;
 
-    [[nodiscard]] auto select_fragment(coord2 position) const noexcept
-        -> std::optional<color4>;
+    [[nodiscard]] auto fragment(coord2i position) const noexcept
+        -> color4;
+
+    [[nodiscard]] auto fragment(ptrdiff_t index) const noexcept
+        -> color4;
   };
 }
 

@@ -4,6 +4,7 @@
 #include <cute/cute.h>
 
 #include <chrono>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <iostream>
@@ -12,7 +13,7 @@
 #include <SDL_video.h>
 
 namespace cute::example {
-  using std::is_same_v, std::decay_t;
+  using std::is_same_v, std::decay_t, std::pmr::vector;
 
   static constexpr int default_window_width  = 1024;
   static constexpr int default_window_height = 768;
@@ -117,37 +118,57 @@ namespace cute::example {
     return world;
   }
 
-  void create() noexcept {
-    world() = world().form(
-        [](cute::state const &, auto in) -> cute::entity_type {
-          auto f = [](float x) -> float {
-            auto n = static_cast<int>(x);
-            return static_cast<float>(n & 255) / 255;
-          };
+  [[nodiscard]] auto fragment_stage() noexcept -> cute::state & {
+    static auto stage = cute::state {};
+    return stage;
+  }
 
-          if constexpr (is_same_v<decay_t<decltype(in)>,
-                                  cute::fragment_position>)
-            return cute::render_fragment { .position = in,
-                                           .color    = {
-                                                  .red   = f(in.x),
-                                                  .green = f(in.y),
-                                                  .blue = f(in.x + in.y),
-                                                  .alpha = 1 } };
-          return cute::noop {};
-        });
+  void create() noexcept {
+    world() = world().form([](cute::state const &, auto in)
+                               -> vector<cute::primitive_type> {
+      auto f = [](auto x) -> float {
+        return static_cast<float>(x & 255) / 255;
+      };
+
+      if constexpr (is_same_v<decay_t<decltype(in)>,
+                              cute::fragment_in>) {
+        auto v = vector<cute::primitive_type> {
+          &cute::memory_resource
+        };
+        v.reserve(in.area.width * in.area.height);
+
+        for (auto y = in.area.y; y < in.area.y + in.area.height; ++y)
+          for (auto x = in.area.x; x < in.area.x + in.area.width; ++x)
+            v.emplace_back(
+                cute::fragment_out { .position = { .x = x, .y = y },
+                                     .color    = { .red   = f(x),
+                                                   .green = f(y),
+                                                   .blue  = f(x + y),
+                                                   .alpha = 1 } });
+
+        return v;
+      }
+
+      return {};
+    });
   }
 
   void animation(int64_t time_elapsed) noexcept { }
 
-  [[nodiscard]] auto pixel(ptrdiff_t x, ptrdiff_t y) noexcept
-      -> pixel_type {
-    auto color = world().fragment(
-        { static_cast<float>(x), static_cast<float>(y) });
+  void render(int width, int height) noexcept {
+    fragment_stage() = world()
+                           .put(cute::fragment_in {
+                               .area = { 0, 0, width, height } })
+                           .cycle();
+  }
 
+  [[nodiscard]] auto pixel(int index) noexcept -> pixel_type {
     auto convert = [](float c) -> uint8_t {
       auto b = static_cast<int>(c * 255.f);
       return b < 0 ? 0 : b > 255 ? 255 : static_cast<uint8_t>(b);
     };
+
+    auto color = fragment_stage().fragment(index);
 
     return { .r = convert(color.red),
              .g = convert(color.green),
@@ -155,7 +176,10 @@ namespace cute::example {
              .a = convert(color.alpha) };
   }
 
-  void render(SDL_Renderer *renderer, render_buffer buffer) noexcept {
+  void frame(SDL_Renderer *renderer, render_buffer buffer,
+             int64_t time_elapsed) noexcept {
+    animation(time_elapsed);
+
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
 
@@ -170,10 +194,12 @@ namespace cute::example {
       else {
         pitch /= sizeof(pixel_type);
 
-        for (ptrdiff_t j = 0; j < buffer.height; j++)
-          for (ptrdiff_t i = 0, n = j * pitch; i < buffer.width;
+        render(buffer.width, buffer.height);
+
+        for (int j = 0; j < buffer.height; j++)
+          for (int i = 0, n = j * buffer.width; i < buffer.width;
                i++, n++)
-            pixels[n] = pixel(i, j);
+            pixels[n] = pixel(n);
 
         SDL_UnlockTexture(buffer.texture);
       }
@@ -182,12 +208,6 @@ namespace cute::example {
     }
 
     SDL_RenderPresent(renderer);
-  }
-
-  void frame(SDL_Renderer *renderer, render_buffer buffer,
-             int64_t time_elapsed) noexcept {
-    animation(time_elapsed);
-    render(renderer, buffer);
   }
 
   void event_loop(SDL_Renderer *renderer) noexcept {
