@@ -6,7 +6,7 @@
 
 namespace cute {
   constexpr auto coord2i::operator<=>(
-      coord2i const &other) const noexcept {
+      coord2i const &other) const noexcept -> std::strong_ordering {
     using std::strong_ordering;
     if (y < other.y || (y == other.y && x < other.x))
       return strong_ordering::less;

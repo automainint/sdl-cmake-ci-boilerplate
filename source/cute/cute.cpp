@@ -5,8 +5,6 @@
 
 #include <algorithm>
 
-#include <iostream>
-
 namespace cute {
   using std::visit, std::decay_t, std::is_same_v, std::optional,
       std::nullopt, std::pmr::synchronized_pool_resource, std::sort,

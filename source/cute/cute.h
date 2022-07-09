@@ -32,7 +32,7 @@ namespace cute {
     ptrdiff_t y = 0;
 
     [[nodiscard]] constexpr auto operator<=>(
-        coord2i const &) const noexcept;
+        coord2i const &) const noexcept -> std::strong_ordering;
   };
 
   struct recti {
