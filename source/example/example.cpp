@@ -4,7 +4,6 @@
 #include <cute/cute.h>
 
 #include <chrono>
-#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <iostream>
@@ -25,90 +24,17 @@ namespace cute::example {
     log(args...);
   }
 
-  [[nodiscard]] auto init() noexcept -> bool {
-    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-      log("SDL_Init failed: ", SDL_GetError(), '\n');
-      return false;
-    }
-
-    return true;
-  }
-
-  [[nodiscard]] auto create_window() noexcept -> SDL_Window * {
-    auto window = SDL_CreateWindow(
-        "Cute Example", SDL_WINDOWPOS_CENTERED,
-        SDL_WINDOWPOS_CENTERED, default_window_width,
-        default_window_height, SDL_WINDOW_RESIZABLE);
-
-    if (window == nullptr)
-      log("SDL_CreateWindow failed: ", SDL_GetError(), '\n');
-
-    return window;
-  }
-
-  [[nodiscard]] auto create_renderer(SDL_Window *window) noexcept
-      -> SDL_Renderer * {
-    if (window == nullptr)
-      return nullptr;
-
-    auto renderer = SDL_CreateRenderer(window, -1,
-                                       SDL_RENDERER_ACCELERATED |
-                                           SDL_RENDERER_PRESENTVSYNC);
-
-    if (renderer == nullptr)
-      log("SDL_CreateSoftwareRenderer failed: ", SDL_GetError(),
-          '\n');
-
-    auto info = SDL_RendererInfo {};
-
-    if (SDL_GetRendererInfo(renderer, &info) < 0)
-      log("SDL_GetRendererInfo failed: ", SDL_GetError(), '\n');
-    else
-      log("SDL renderer: ", info.name, '\n');
-
-    return renderer;
-  }
-
-  struct render_buffer {
-    int          width   = 0;
-    int          height  = 0;
-    SDL_Texture *texture = nullptr;
-  };
-
-  [[nodiscard]] auto update_size(SDL_Renderer *renderer,
-                                 render_buffer buffer) noexcept
-      -> render_buffer {
-    if (renderer == nullptr)
-      return buffer;
-
-    auto rect = SDL_Rect {};
-    SDL_RenderGetViewport(renderer, &rect);
-
-    if (buffer.texture != nullptr && buffer.width == rect.w &&
-        buffer.height == rect.h)
-      return buffer;
-
-    if (buffer.texture != nullptr)
-      SDL_DestroyTexture(buffer.texture);
-
-    buffer.width  = rect.w;
-    buffer.height = rect.h;
-
-    buffer.texture = SDL_CreateTexture(
-        renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STREAMING,
-        buffer.width, buffer.height);
-
-    if (buffer.texture == nullptr)
-      log("SDL_CreateTexture failed: ", SDL_GetError(), '\n');
-
-    return buffer;
-  }
-
   struct pixel_type {
     uint8_t r;
     uint8_t g;
     uint8_t b;
     uint8_t a;
+  };
+
+  struct render_buffer {
+    int          width   = 0;
+    int          height  = 0;
+    SDL_Texture *texture = nullptr;
   };
 
   static_assert(sizeof(pixel_type) == 4);
@@ -176,6 +102,81 @@ namespace cute::example {
              .a = convert(color.alpha) };
   }
 
+  [[nodiscard]] auto init() noexcept -> bool {
+    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+      log("SDL_Init failed: ", SDL_GetError(), '\n');
+      return false;
+    }
+
+    return true;
+  }
+
+  [[nodiscard]] auto create_window() noexcept -> SDL_Window * {
+    auto window = SDL_CreateWindow(
+        "Cute Example", SDL_WINDOWPOS_CENTERED,
+        SDL_WINDOWPOS_CENTERED, default_window_width,
+        default_window_height, SDL_WINDOW_RESIZABLE);
+
+    if (window == nullptr)
+      log("SDL_CreateWindow failed: ", SDL_GetError(), '\n');
+
+    return window;
+  }
+
+  [[nodiscard]] auto create_renderer(SDL_Window *window) noexcept
+      -> SDL_Renderer * {
+    if (window == nullptr)
+      return nullptr;
+
+    auto renderer = SDL_CreateRenderer(window, -1,
+                                       SDL_RENDERER_ACCELERATED |
+                                           SDL_RENDERER_PRESENTVSYNC);
+
+    if (renderer == nullptr)
+      log("SDL_CreateSoftwareRenderer failed: ", SDL_GetError(),
+          '\n');
+
+    auto info = SDL_RendererInfo {};
+
+    if (SDL_GetRendererInfo(renderer, &info) < 0)
+      log("SDL_GetRendererInfo failed: ", SDL_GetError(), '\n');
+    else
+      log("SDL renderer: ", info.name, '\n');
+
+    return renderer;
+  }
+
+  [[nodiscard]] auto update_size(SDL_Renderer *renderer,
+                                 render_buffer buffer) noexcept
+      -> render_buffer {
+    if (renderer == nullptr)
+      return buffer;
+
+    auto rect = SDL_Rect {};
+    SDL_RenderGetViewport(renderer, &rect);
+
+    if (buffer.texture != nullptr && buffer.width == rect.w &&
+        buffer.height == rect.h)
+      return buffer;
+
+    if (buffer.texture != nullptr)
+      SDL_DestroyTexture(buffer.texture);
+
+    buffer.width  = rect.w;
+    buffer.height = rect.h;
+
+    buffer.texture = SDL_CreateTexture(
+        renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STREAMING,
+        buffer.width, buffer.height);
+
+    if (buffer.texture == nullptr)
+      log("SDL_CreateTexture failed: ", SDL_GetError(), '\n');
+
+    render(buffer.width, buffer.height);
+
+    return buffer;
+  }
+
   void frame(SDL_Renderer *renderer, render_buffer buffer,
              int64_t time_elapsed) noexcept {
     animation(time_elapsed);
@@ -193,8 +194,6 @@ namespace cute::example {
         log("SDL_LockTexture failed: ", SDL_GetError(), '\n');
       else {
         pitch /= sizeof(pixel_type);
-
-        render(buffer.width, buffer.height);
 
         for (int j = 0; j < buffer.height; j++)
           for (int i = 0, n = j * buffer.width; i < buffer.width;
