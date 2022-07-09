@@ -25,16 +25,16 @@ namespace cute {
     value_type blue  = 0;
     value_type alpha = 0;
 
-    [[nodiscard]] auto operator<=>(color4 const &) const noexcept
-        -> bool = default;
+    [[nodiscard]] auto operator<=>(color4 const &) const noexcept =
+        default;
   };
 
   struct coord2 {
     value_type x = 0;
     value_type y = 0;
 
-    [[nodiscard]] auto operator<=>(coord2 const &) const noexcept
-        -> bool = default;
+    [[nodiscard]] auto operator<=>(coord2 const &) const noexcept =
+        default;
   };
 
   struct fragment_position : coord2 { };

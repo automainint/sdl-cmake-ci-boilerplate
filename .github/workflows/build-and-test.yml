@@ -16,7 +16,7 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [ ubuntu-latest, macos-latest, windows-2019 ]
+        os: [ ubuntu-latest, windows-2019 ]
 
     runs-on: ${{ matrix.os }}
 
@@ -34,7 +34,7 @@ jobs:
           sudo apt install gcc-11 g++-11
 
       - name: Install gcovr
-        if: runner.os != 'Windows'
+        if: runner.os == 'Linux'
         run: |
           python3 -m pip install gcovr==5.0
 
@@ -46,7 +46,7 @@ jobs:
           echo "C:/Program Files/OpenCppCoverage" >> $GITHUB_PATH
 
       - name: Build with GCC 11
-        if: runner.os != 'Windows'
+        if: runner.os == 'Linux'
         run: |
           cmake -D CMAKE_BUILD_TYPE=$BUILD_TYPE -B build -S .
           cmake --build build --config $BUILD_TYPE
@@ -68,13 +68,6 @@ jobs:
           ctest -V -C $BUILD_TYPE
           gcovr --gcov-executable gcov-11 -j $(nproc) --delete --root ../source/ --exclude '\.\./source/test/' --print-summary --xml-pretty --xml coverage.xml .
 
-      - name: Run tests & generate coverage on macOS
-        if: runner.os == 'macOS'
-        working-directory: ${{ github.workspace }}/build
-        run: |
-          ctest -V -C $BUILD_TYPE
-          gcovr --gcov-executable gcov-11 -j 2 --delete --root ../source/ --exclude '\.\./source/test/' --print-summary --xml-pretty --xml coverage.xml .
-
       - name: Run tests & generate coverage on Windows
         if: runner.os == 'Windows'
         shell: bash
@@ -93,7 +86,7 @@ jobs:
   integration:
     strategy:
       matrix:
-        os: [ ubuntu-latest, macos-latest, windows-2019 ]
+        os: [ ubuntu-latest, windows-2019 ]
         name: [ fetch_content, find_package ]
 
     runs-on: ${{ matrix.os }}
@@ -112,7 +105,7 @@ jobs:
           sudo apt install gcc-11 g++-11
 
       - name: Build with GCC 11
-        if: runner.os != 'Windows'
+        if: runner.os == 'Linux'
         run: |
           cmake -D CMAKE_BUILD_TYPE=$BUILD_TYPE -B build -S .
           cmake --build build --config $BUILD_TYPE
