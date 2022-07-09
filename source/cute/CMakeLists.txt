@@ -3,4 +3,5 @@ target_sources(
     PRIVATE
       cute.cpp
     PUBLIC
+      $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/cute.impl.h>
       $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/cute.h>)

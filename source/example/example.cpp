@@ -3,12 +3,17 @@
 
 #include <cute/cute.h>
 
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
 #include <iostream>
 
 #include <SDL.h>
 #include <SDL_video.h>
 
 namespace cute::example {
+  using std::is_same_v, std::decay_t;
+
   static constexpr int default_window_width  = 1024;
   static constexpr int default_window_height = 768;
 
@@ -107,6 +112,49 @@ namespace cute::example {
 
   static_assert(sizeof(pixel_type) == 4);
 
+  [[nodiscard]] auto world() noexcept -> cute::state & {
+    static auto world = cute::state {};
+    return world;
+  }
+
+  void create() noexcept {
+    world() = world().form(
+        [](cute::state const &, auto in) -> cute::entity_type {
+          auto f = [](float x) -> float {
+            auto n = static_cast<int>(x);
+            return static_cast<float>(n & 255) / 255;
+          };
+
+          if constexpr (is_same_v<decay_t<decltype(in)>,
+                                  cute::fragment_position>)
+            return cute::render_fragment { .position = in,
+                                           .color    = {
+                                                  .red   = f(in.x),
+                                                  .green = f(in.y),
+                                                  .blue = f(in.x + in.y),
+                                                  .alpha = 1 } };
+          return cute::noop {};
+        });
+  }
+
+  void animation(int64_t time_elapsed) noexcept { }
+
+  [[nodiscard]] auto pixel(ptrdiff_t x, ptrdiff_t y) noexcept
+      -> pixel_type {
+    auto color = world().fragment(
+        { static_cast<float>(x), static_cast<float>(y) });
+
+    auto convert = [](float c) -> uint8_t {
+      auto b = static_cast<int>(c * 255.f);
+      return b < 0 ? 0 : b > 255 ? 255 : static_cast<uint8_t>(b);
+    };
+
+    return { .r = convert(color.red),
+             .g = convert(color.green),
+             .b = convert(color.blue),
+             .a = convert(color.alpha) };
+  }
+
   void render(SDL_Renderer *renderer, render_buffer buffer) noexcept {
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
@@ -124,12 +172,8 @@ namespace cute::example {
 
         for (ptrdiff_t j = 0; j < buffer.height; j++)
           for (ptrdiff_t i = 0, n = j * pitch; i < buffer.width;
-               i++, n++) {
-            pixels[n].r = i;
-            pixels[n].g = j;
-            pixels[n].b = i + j;
-            pixels[n].a = 255;
-          }
+               i++, n++)
+            pixels[n] = pixel(i, j);
 
         SDL_UnlockTexture(buffer.texture);
       }
@@ -140,11 +184,24 @@ namespace cute::example {
     SDL_RenderPresent(renderer);
   }
 
+  void frame(SDL_Renderer *renderer, render_buffer buffer,
+             int64_t time_elapsed) noexcept {
+    animation(time_elapsed);
+    render(renderer, buffer);
+  }
+
   void event_loop(SDL_Renderer *renderer) noexcept {
+    using clock = std::chrono::steady_clock;
+    using std::chrono::duration_cast, std::chrono::milliseconds;
+
     if (renderer == nullptr)
       return;
 
     auto buffer = update_size(renderer, {});
+
+    create();
+
+    auto time = clock::now();
 
     for (bool done = false; !done;) {
       auto event = SDL_Event {};
@@ -154,7 +211,12 @@ namespace cute::example {
 
       buffer = update_size(renderer, buffer);
 
-      render(renderer, buffer);
+      auto time_elapsed = duration_cast<milliseconds>(clock::now() -
+                                                      time);
+
+      frame(renderer, buffer, time_elapsed.count());
+
+      time += time_elapsed;
     }
   }
 
