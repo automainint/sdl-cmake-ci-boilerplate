@@ -1,1 +1,1 @@
-# sdl-cmake-ci-boilerplate
+# sdl_cmake_ci_boilerplate
