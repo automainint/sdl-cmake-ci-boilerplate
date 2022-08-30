@@ -1,1 +1,1 @@
-# cute
+# sdl-cmake-ci-boilerplate

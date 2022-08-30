@@ -4,7 +4,7 @@ TabWidth: 2
 IndentWidth: 2
 
 Language: Cpp
-Standard: c++20
+Standard: Auto
 
 ColumnLimit: 70
 MaxEmptyLinesToKeep: 1
@@ -14,7 +14,7 @@ PenaltyBreakAssignment: 100
 PenaltyReturnTypeOnItsOwnLine: 200
 
 IndentCaseLabels: true
-IndentExternBlock: Indent
+IndentExternBlock: NoIndent
 IndentGotoLabels: false
 IndentPPDirectives: AfterHash
 IndentRequires: true
@@ -45,7 +45,7 @@ AlignConsecutiveDeclarations: Consecutive
 AlignEscapedNewlines: Left
 AllowShortLambdasOnASingleLine: All
 AllowShortFunctionsOnASingleLine: Empty
-AllowShortBlocksOnASingleLine: Always
+AllowShortBlocksOnASingleLine: Empty
 AllowShortCaseLabelsOnASingleLine: true
 AllowShortLoopsOnASingleLine: true
 AllowAllArgumentsOnNextLine: true

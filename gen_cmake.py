@@ -34,12 +34,12 @@ def print_list(s: list, offset: int):
       for i in range(offset - 1):
         buf += ' '
       char_count = offset - 1
-    buf += ' ' + f    
+    buf += ' ' + f
   return buf
 
 def print_sources(folder: str, target_name: str):
   buf = ''
-  srcs = get_files(folder, '*.cpp')
+  srcs = get_files(folder, '*.c')
   hdrs = get_files(folder, '*.h')
   if len(srcs) > 0 or len(hdrs) > 0:
     buf += 'target_sources(\n  ' + target_name
@@ -81,9 +81,7 @@ def gen_cmake(folder: str, target_name: str):
   write_subdirs(folder, target_name)
 
 def main():
-  gen_cmake(os.path.join('..', 'source', 'cute'), '${CUTE_LIBRARY}')
-  gen_cmake(os.path.join('..', 'source', 'example'), '${CUTE_EXAMPLE}')
-  gen_cmake(os.path.join('..', 'source', 'test', 'unittests'), '${CUTE_TEST}')
+  gen_cmake(os.path.join('source', 'example'), '${EXAMPLE}')
 
 if __name__ == '__main__':
   main()

@@ -1,4 +1,4 @@
 target_sources(
-  ${CUTE_EXAMPLE}
+  ${EXAMPLE}
     PRIVATE
-      example.cpp)
+      example.c)
